@@ -14,7 +14,13 @@ declared_variables = {}
 def variable_replacement(match):
     # Extract the value of the first group
     variable_name = match.group(1)
-    variable_value = match.group(2)
+    variable_value = match.group(4)
+    
+    # trim ; at the end if there
+    if variable_value.endswith(";"):
+        variable_value = variable_value[:-1]
+        
+    # print(f"\033[92m{variable_name}\033[0m is \033[92m{variable_value}\033[0m")
 
     variable_type = ""
     if is_float(variable_value):
@@ -35,10 +41,14 @@ def variable_replacement(match):
     was_there = variable_name in declared_variables
 
     if was_there:
-        return f"{variable_name} = {match.group(2)};"
+        return f"{variable_name} = {variable_value};"
     else:
         declared_variables[variable_name] = variable_type
-        return f"{variable_type} {variable_name} = {match.group(2)};"
+        # print in blue
+        print("\033[94m")
+        print(declared_variables)
+        print("\033[0m")
+        return f"{variable_type} {variable_name} = {variable_value};"
 
 
 type_formatter_lookup = {"int": "%d", "double": "%f", "const char*": "%s"}
@@ -85,22 +95,36 @@ def echo_translation(line):
         return printf_command
 
     return re.sub(r"^echo (.*)$", process, line)
-
-
+  
 def translate_line(line):
+    # in red
+    print("\033[91m", end="")
+    print(line)
+    print("\033[0m", end="")
+    
+    if line == "sum=$((sum + i))":
+      print("sum = sum + i;")
+    
     # Handle comment: convert # to //, and don't translate anything after #
     is_match = re.match(r"#", line)
     if is_match:
       line = re.sub(r"#", "//", line)
       return line
   
-    # Variable assignment: VAR=value
-    line = re.sub(r"^(\w+)=(.*)$", variable_replacement, line)
-
+    line = re.sub(r"^done$", r"}", line)
+    line = re.sub(r"do$", r"{", line)
+    # for loops (())
+    
+    line = re.sub(r"^for \(\((.*)\)\)(.*)$", r"for (\1)", line)
+    
     # Arithmetic: let "VAR=expression"
     line = re.sub(r'^let "(\w+)=(.*)"$', r"\1 = \2;", line)
+    
+    # Variable assignment: VAR=value
+    line = re.sub(r"(\w+)(\s*)=(\s*)(\S*)(;|$)", variable_replacement, line)
 
     # Arithemtic: $((expression))
+    line = re.sub(r"\$\(\((.*)\)\)$", r"(\1);", line)
     line = re.sub(r"\$\(\((.*)\)\)", r"(\1)", line)
 
     # if statement: if [ condition ]; then ... fi
@@ -117,15 +141,13 @@ def translate_line(line):
 
     # for loop: for VAR in {start..end}; do ... done
     line = re.sub(
-        r"^for (\w+) in \{(\d+)\.\.(\d+)\}; do$",
-        r"for (int \1 = \2; \1 <= \3; \1++) {",
+        r"^for (\w+) in \{(\d+)\.\.(\d+)\}(;?)",
+        r"for (int \1 = \2; \1 <= \3; \1++)",
         line,
     )
-    line = re.sub(r"^done$", r"}", line)
-    line = re.sub(r"do$", r"{", line)
-
+    
     # while loop: while [ condition ]; do ... done
-    line = re.sub(r"^while \[ (.*) \](.*)do$", r"while (\1) {", line)
+    line = re.sub(r"^while \[ (.*) \](.*)$", r"while (\1)", line)
     
     # while loop: while [ condition ]
     line = re.sub(r"^while \[ (.*) \]$", r"while (\1)", line)
@@ -135,6 +157,11 @@ def translate_line(line):
     
     # handle variable usage
     line = re.sub(r"\$(\w+)", r"\1", line)
+    
+    # in green
+    print("\033[92m", end="")
+    print(line)
+    print("\033[0m", end="")
 
     return line
 
@@ -190,20 +217,26 @@ done
 echo "Sum of even numbers up to $limit is: $sum"
 
 # Using for loop for displaying a sequence
-# for (( j = 1; j <= 5; j++ ))
-# do
-#     echo "Sequence number: $j"
-# done
+for (( j = 1; j <= 5; j++ ))
+do
+    echo "Sequence number: $j"
+done
+
+# for range
+for i in {1..5}
+do
+    echo "Range number: $i"
+done
 """
 
 c_script = translate_bash_to_c(bash_script)
 
-print(c_script)
+# print(c_script)
 
 # save to file and try to compile
 with open("script.c", "w") as f:
     f.write(c_script)
 
-# compile
+# compile 
 import os
 os.system("gcc script.c -o script.out")
