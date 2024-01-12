@@ -130,11 +130,11 @@ def translate_line(line):
     # while loop: while [ condition ]
     line = re.sub(r"^while \[ (.*) \]$", r"while (\1)", line)
 
-    # handle variable usage
-    line = re.sub(r"\$(\w+)", r"\1", line)
-
     # echo: echo "string"
     line = echo_translation(line)
+    
+    # handle variable usage
+    line = re.sub(r"\$(\w+)", r"\1", line)
 
     return line
 
@@ -203,4 +203,7 @@ print(c_script)
 # save to file and try to compile
 with open("script.c", "w") as f:
     f.write(c_script)
-    
+
+# compile
+import os
+os.system("gcc script.c -o script.out")
