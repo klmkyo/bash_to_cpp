@@ -62,7 +62,10 @@ def echo_translation(line):
         if echo_content.startswith('"') and echo_content.endswith('"'):
             echo_content = echo_content[1:-1]
 
-        arguments = echo_content.split(" ")
+        pattern = r"(\$[a-zA-Z_]\w*)"
+        # Splitting the text using the pattern
+        arguments = re.split(pattern, echo_content)
+        arguments = [x for x in arguments if x != ""]
         
         printf_command = 'printf("'
         printf_arguments = []
@@ -80,9 +83,6 @@ def echo_translation(line):
             else:
                 printf_command += arg
 
-            if not is_last:
-                printf_command += " "
-        
         printf_command += '\\n"'
         
         if(len(printf_arguments)):
@@ -110,6 +110,9 @@ def translate_line(line):
     if is_match:
       line = re.sub(r"#", "//", line)
       return line
+
+        # echo: echo "string"
+    line = echo_translation(line)
   
     line = re.sub(r"^done$", r"}", line)
     line = re.sub(r"do$", r"{", line)
@@ -151,12 +154,11 @@ def translate_line(line):
     
     # while loop: while [ condition ]
     line = re.sub(r"^while \[ (.*) \]$", r"while (\1)", line)
-
-    # echo: echo "string"
-    line = echo_translation(line)
     
     # handle variable usage
     line = re.sub(r"\$(\w+)", r"\1", line)
+    
+    #
     
     # in green
     print("\033[92m", end="")
@@ -227,6 +229,14 @@ for i in {1..5}
 do
     echo "Range number: $i"
 done
+
+# double, float testing
+a=1.5
+b=2.5
+c=3.5
+echo "a=$a,b=$b,c=$c"
+sum=$((a + b + c))
+echo "sum=$sum"
 """
 
 c_script = translate_bash_to_c(bash_script)

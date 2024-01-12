@@ -30,5 +30,13 @@ int main() {
         printf("Range number: %d\n", i);
     }
 
+    // double, float testing
+    double a = 1.5;
+    double b = 2.5;
+    double c = 3.5;
+    printf("a=%f,b=%f,c=%f\n", a, b, c);
+    sum = (a + b + c);
+    printf("sum=%d\n", sum);
+
     return 0;
 }
