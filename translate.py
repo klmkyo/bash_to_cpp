@@ -158,8 +158,6 @@ def translate_line(line):
     # handle variable usage
     line = re.sub(r"\$(\w+)", r"\1", line)
     
-    #
-    
     # in green
     print("\033[92m", end="")
     print(line)
@@ -237,6 +235,8 @@ c=3.5
 echo "a=$a,b=$b,c=$c"
 sum=$((a + b + c))
 echo "sum=$sum"
+znaki="siema"
+echo "znaki=$znaki"
 """
 
 c_script = translate_bash_to_c(bash_script)
@@ -246,7 +246,3 @@ c_script = translate_bash_to_c(bash_script)
 # save to file and try to compile
 with open("script.c", "w") as f:
     f.write(c_script)
-
-# compile 
-import os
-os.system("gcc script.c -o script.out")
