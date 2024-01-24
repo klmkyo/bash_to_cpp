@@ -2,7 +2,7 @@
 
 declare -A declared_variables
 
-function variable_replacement {
+variable_replacement() {
     local variable_name
     local variable_value
 
@@ -10,8 +10,9 @@ function variable_replacement {
         variable_name="${BASH_REMATCH[1]}"
         variable_value="${BASH_REMATCH[2]}"
     else
-        echo "Error: variable name is not valid"
-        exit 1
+        # this means that the line is not a variable assignment
+        echo "$1"
+        return
     fi
 
 
@@ -98,8 +99,74 @@ echo_translation() {
 
         printf_command+=");"
         echo "$printf_command"
+    else
+        echo "$line"
     fi
 }
+
+translate_line() {
+    local line="$1"
+
+    # in red
+    printf "\033[91m%s\033[0m\n" "$line"
+    
+    # Handle comment: convert # to //, and don't translate anything after #
+    if [[ "$line" =~ ^# ]]; then
+        line=${line/#\#//}
+        printf "\033[92m%s\033[0m\n" "$line"
+        return
+    fi
+
+    # echo: echo "string"
+    line=$(echo_translation "$line")
+  
+    line=$(echo "$line" | sed -E 's/^done$/}/')
+    line=$(echo "$line" | sed -E 's/do$/{/')
+
+    # for loops (())
+    line=$(echo "$line" | sed -E 's/^for \(\((.*)\)\)(.*)$/for (\1)/')
+
+    # Arithmetic: let "VAR=expression"
+    line=$(echo "$line" | sed -E 's/^let "(\w+)=(.*)"$/\1 = \2;/')
+
+    # Variable assignment: VAR=value
+    line=$(variable_replacement "$line")
+
+    # Arithmetic: $((expression))
+    line=$(echo "$line" | sed -E 's/\$\(\((.*)\)\)$/(\1);/')
+    line=$(echo "$line" | sed -E 's/\$\(\((.*)\)\)/(\1)/')
+
+    # if statement: if [ condition ]; then ... fi
+    line=$(echo "$line" | sed -E 's/^if \[ (.*) \]; then$/if (\1) {/')
+    line=$(echo "$line" | sed -E 's/^fi$/}/')
+
+    # Conditions inside if statement: VAR -eq|ne|lt|le|gt|ge value
+    line=$(echo "$line" | sed 's/-eq/==/g')
+    line=$(echo "$line" | sed 's/-ne/!=/g')
+    line=$(echo "$line" | sed 's/-lt/</g')
+    line=$(echo "$line" | sed 's/-le/<=/g')
+    line=$(echo "$line" | sed 's/-gt/>/g')
+    line=$(echo "$line" | sed 's/-ge/>=/g')
+
+    # for loop: for VAR in {start..end}; do ... done
+    line=$(echo "$line" | sed -E 's/^for (\w+) in \{(\d+)\.\.(\d+)\}(;?)/for (int \1 = \2; \1 <= \3; \1++)/')
+
+    # while loop: while [ condition ]; do ... done
+    line=$(echo "$line" | sed -E 's/^while \[ (.*) \](.*)$/while (\1)/')
+
+    # while loop: while [ condition ]
+    line=$(echo "$line" | sed -E 's/^while \[ (.*) \]$/while (\1)/')
+
+    # handle variable usage
+    line=$(echo "$line" | sed -E 's/\$(\w+)/\1/g')
+
+    # in green
+    printf "\033[92m%s\033[0m\n" "$line"
+
+    echo "$line"
+}
+
+translate_line "name=John"
 
 
 # variable_replacement "name=John"
