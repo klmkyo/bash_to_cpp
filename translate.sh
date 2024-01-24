@@ -6,12 +6,10 @@ variable_replacement() {
     local variable_name
     local variable_value
 
-    if [[ $1 =~ ^([a-zA-Z_][a-zA-Z0-9_]*)=(.*)$ ]]; then
+    if [[ $line =~ ^([a-zA-Z_][a-zA-Z0-9_]*)=(.*)$ ]]; then
         variable_name="${BASH_REMATCH[1]}"
         variable_value="${BASH_REMATCH[2]}"
     else
-        # this means that the line is not a variable assignment
-        echo "$1"
         return
     fi
 
@@ -40,13 +38,13 @@ variable_replacement() {
     local was_there=${declared_variables[$variable_name]+_}
 
     if [[ -n "$was_there" ]]; then
-        echo "${variable_name}=${variable_value};"
+        line="${variable_name}=${variable_value};"
     else
         declared_variables[$variable_name]=$variable_type
         # echo -e "\033[94m"
         # declare -p declared_variables
         # echo -e "\033[0m"
-        echo "${variable_type} ${variable_name}=${variable_value};"
+        line="${variable_type} ${variable_name}=${variable_value};"
     fi
 }
 
@@ -56,7 +54,6 @@ type_formatter_lookup["double"]="%f"
 type_formatter_lookup["const char*"]="%s"
 
 echo_translation() {
-    local line="$1"
     local echo_content
 
     if [[ $line =~ ^echo[[:space:]]+(.*)$ ]]; then
@@ -75,8 +72,8 @@ echo_translation() {
             local var_type=${declared_variables[$var_name_stripped]}
 
             # DEBUG print variable name and type
-            echo -e "\033[92m${var_name_stripped}\033[0m is \033[92m${var_type}\033[0m"
-            echo -e "\033[94m${echo_content}\033[0m"
+            # echo -e "\033[92m${var_name_stripped}\033[0m is \033[92m${var_type}\033[0m"
+            # echo -e "\033[94m${echo_content}\033[0m"
 
             # add up to the variable name
             printf_command+="${echo_content%%"$var_name"*}"
@@ -98,27 +95,25 @@ echo_translation() {
         fi
 
         printf_command+=");"
-        echo "$printf_command"
-    else
-        echo "$line"
+        line="$printf_command"
     fi
 }
 
 translate_line() {
-    local line="$1"
+    line="$1"
 
     # in red
-    printf "\033[91m%s\033[0m\n" "$line"
+    # printf "\033[91m%s\033[0m\n" "$line"
     
     # Handle comment: convert # to //, and don't translate anything after #
     if [[ "$line" =~ ^# ]]; then
         line=${line/#\#//}
-        printf "\033[92m%s\033[0m\n" "$line"
+        # printf "\033[92m%s\033[0m\n" "$line"
         return
     fi
 
     # echo: echo "string"
-    line=$(echo_translation "$line")
+    echo_translation
   
     line=$(echo "$line" | sed -E 's/^done$/}/')
     line=$(echo "$line" | sed -E 's/do$/{/')
@@ -130,7 +125,7 @@ translate_line() {
     line=$(echo "$line" | sed -E 's/^let "(\w+)=(.*)"$/\1 = \2;/')
 
     # Variable assignment: VAR=value
-    line=$(variable_replacement "$line")
+    variable_replacement
 
     # Arithmetic: $((expression))
     line=$(echo "$line" | sed -E 's/\$\(\((.*)\)\)$/(\1);/')
@@ -160,16 +155,71 @@ translate_line() {
     # handle variable usage
     line=$(echo "$line" | sed -E 's/\$(\w+)/\1/g')
 
-    # in green
-    printf "\033[92m%s\033[0m\n" "$line"
-
+    # output the translated line
     echo "$line"
 }
 
-translate_line "name=John"
 
+# same as above, but as bash string
+bash_script=$(cat << 'END_HEREDOC'
+#!/bin/bash
 
-# variable_replacement "name=John"
-# variable_replacement "age=20"
-# variable_replacement "height=1.8"
-# echo_translation 'echo "Hello $name, you are $age years old and $height meters tall"'
+# Initialize variables
+limit=10
+sum=0
+i=0
+
+# Using while loop for summing even numbers
+while [ $i -le $limit ]
+do
+    # Math expression to check if number is even
+    if [ $((i % 2)) -eq 0 ]; then
+        # Math expression for summing
+        sum=$((sum + i))
+        echo "Added $i to sum"
+    fi
+    i=$((i + 1))
+done
+
+echo "Sum of even numbers up to $limit is: $sum"
+
+# Using for loop for displaying a sequence
+for (( j = 1; j <= 5; j++ ))
+do
+    echo "Sequence number: $j"
+done
+
+# for range
+for i in {1..5}
+do
+    echo "Range number: $i"
+done
+
+# double, float testing
+a=1.5
+b=2.5
+c=3.5
+echo "a=$a,b=$b,c=$c"
+sum=$((a + b + c))
+echo "sum=$sum"
+znaki="siema"
+echo "znaki=$znaki"
+END_HEREDOC
+)
+
+# Create a file to store the translated lines
+output_file="out.c"
+
+# clear the output file
+> "$output_file"
+
+# In a loop, go through each line and translate it
+while read -r line; do
+    # If line is a shebang, ignore it
+    if [[ "$line" =~ ^#! ]]; then
+        continue
+    fi
+
+    # Translate the line and append it to the output file
+    translate_line "$line" >> "$output_file"
+done <<< "$bash_script"
