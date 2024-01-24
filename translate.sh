@@ -6,10 +6,18 @@ variable_replacement() {
     local variable_name
     local variable_value
 
-    # tutaj spacje zle matchuje
-    if [[ $line =~ ([a-zA-Z_][a-zA-Z0-9_]*)=(.*)(;|$) ]]; then
+    echo -e "\033[94m${line}\033[0m"
+
+    # TODO non-greedy match, spacja dookoła =
+    if [[ $line =~ ([a-zA-Z0-9]+)(\s*)=(\s*)(.*)(;|$) ]]; then
+        # PRINT ALL THE BASH_REMATCHES
+        for i in "${!BASH_REMATCH[@]}"; do
+            echo -e "\033[92m${i}\033[0m is \033[92m${BASH_REMATCH[$i]}\033[0m"
+        done
+
+
         variable_name="${BASH_REMATCH[1]}"
-        variable_value="${BASH_REMATCH[2]}"
+        variable_value="${BASH_REMATCH[4]}"
     else
         return
     fi
@@ -42,9 +50,9 @@ variable_replacement() {
         line="${variable_name}=${variable_value};"
     else
         declared_variables[$variable_name]=$variable_type
-        echo -e "\033[94m"
-        declare -p declared_variables
-        echo -e "\033[0m"
+        # echo -e "\033[94m"
+        # declare -p declared_variables
+        # echo -e "\033[0m"
         line="${variable_type} ${variable_name}=${variable_value};"
     fi
 }
@@ -167,6 +175,8 @@ bash_script=$(cat << 'END_HEREDOC'
 text="Hello World!"
 number=5
 pi=3.14
+
+textbutwithspace = "Hello World!"
 
 for (( j = 1; j <= 5; j++ ))
 do
