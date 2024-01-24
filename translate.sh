@@ -3,8 +3,17 @@
 declare -A declared_variables
 
 function variable_replacement {
-    local variable_name="$1"
-    local variable_value="$2"
+    local variable_name
+    local variable_value
+
+    if [[ $1 =~ ^([a-zA-Z_][a-zA-Z0-9_]*)=(.*)$ ]]; then
+        variable_name="${BASH_REMATCH[1]}"
+        variable_value="${BASH_REMATCH[2]}"
+    else
+        echo "Error: variable name is not valid"
+        exit 1
+    fi
+
 
     # Trim ';' at the end if there
     variable_value="${variable_value%;}"
@@ -33,9 +42,9 @@ function variable_replacement {
         echo "${variable_name}=${variable_value};"
     else
         declared_variables[$variable_name]=$variable_type
-        echo -e "\033[94m"
-        declare -p declared_variables
-        echo -e "\033[0m"
+        # echo -e "\033[94m"
+        # declare -p declared_variables
+        # echo -e "\033[0m"
         echo "${variable_type} ${variable_name}=${variable_value};"
     fi
 }
@@ -45,7 +54,7 @@ type_formatter_lookup["int"]="%d"
 type_formatter_lookup["double"]="%f"
 type_formatter_lookup["const char*"]="%s"
 
-function echo_translation {
+echo_translation() {
     local line="$1"
     local echo_content
 
@@ -92,8 +101,8 @@ function echo_translation {
     fi
 }
 
-# Example usage
-declared_variables["var1"]="int"
-declared_variables["var2"]="double"
-declared_variables["var3"]="const char*"
-echo_translation "echo \"Value of var1: \$var1, var2: \$var2, and var3: \$var3\""
+
+# variable_replacement "name=John"
+# variable_replacement "age=20"
+# variable_replacement "height=1.8"
+# echo_translation 'echo "Hello $name, you are $age years old and $height meters tall"'
