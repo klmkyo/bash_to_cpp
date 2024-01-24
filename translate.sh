@@ -6,13 +6,13 @@ variable_replacement() {
     local variable_name
     local variable_value
 
-    if [[ $line =~ ^([a-zA-Z_][a-zA-Z0-9_]*)=(.*)$ ]]; then
+    # tutaj spacje zle matchuje
+    if [[ $line =~ ([a-zA-Z_][a-zA-Z0-9_]*)=(.*)(;|$) ]]; then
         variable_name="${BASH_REMATCH[1]}"
         variable_value="${BASH_REMATCH[2]}"
     else
         return
     fi
-
 
     # Trim ';' at the end if there
     variable_value="${variable_value%;}"
@@ -35,15 +35,16 @@ variable_replacement() {
         exit 1
     fi
 
+
     local was_there=${declared_variables[$variable_name]+_}
 
     if [[ -n "$was_there" ]]; then
         line="${variable_name}=${variable_value};"
     else
         declared_variables[$variable_name]=$variable_type
-        # echo -e "\033[94m"
-        # declare -p declared_variables
-        # echo -e "\033[0m"
+        echo -e "\033[94m"
+        declare -p declared_variables
+        echo -e "\033[0m"
         line="${variable_type} ${variable_name}=${variable_value};"
     fi
 }
@@ -112,6 +113,7 @@ translate_line() {
         return
     fi
 
+
     # echo: echo "string"
     echo_translation
   
@@ -162,48 +164,14 @@ translate_line() {
 
 # same as above, but as bash string
 bash_script=$(cat << 'END_HEREDOC'
-#!/bin/bash
+text="Hello World!"
+number=5
+pi=3.14
 
-# Initialize variables
-limit=10
-sum=0
-i=0
-
-# Using while loop for summing even numbers
-while [ $i -le $limit ]
-do
-    # Math expression to check if number is even
-    if [ $((i % 2)) -eq 0 ]; then
-        # Math expression for summing
-        sum=$((sum + i))
-        echo "Added $i to sum"
-    fi
-    i=$((i + 1))
-done
-
-echo "Sum of even numbers up to $limit is: $sum"
-
-# Using for loop for displaying a sequence
 for (( j = 1; j <= 5; j++ ))
 do
     echo "Sequence number: $j"
 done
-
-# for range
-for i in {1..5}
-do
-    echo "Range number: $i"
-done
-
-# double, float testing
-a=1.5
-b=2.5
-c=3.5
-echo "a=$a,b=$b,c=$c"
-sum=$((a + b + c))
-echo "sum=$sum"
-znaki="siema"
-echo "znaki=$znaki"
 END_HEREDOC
 )
 
@@ -213,6 +181,9 @@ output_file="out.c"
 # clear the output file
 > "$output_file"
 
+echo "#include <stdio.h>" >> "$output_file"
+echo "int main() {" >> "$output_file"
+
 # In a loop, go through each line and translate it
 while read -r line; do
     # If line is a shebang, ignore it
@@ -221,5 +192,8 @@ while read -r line; do
     fi
 
     # Translate the line and append it to the output file
-    translate_line "$line" >> "$output_file"
+    # translate_line "$line" >> "$output_file"
+    translate_line "$line"
 done <<< "$bash_script"
+
+echo "}" >> "$output_file"
