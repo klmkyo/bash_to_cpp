@@ -17,9 +17,6 @@ geometry: margin=3cm
 \newpage
 
 \thispagestyle{empty}
-\tableofcontents
-
-\newpage
 
 \setcounter{page}{1}
 # Wstęp
