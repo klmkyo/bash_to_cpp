@@ -140,12 +140,15 @@ translate_line() {
     # Tłumaczenie instrukcji echo
     echo_translation
 
-    # Różne tłumaczenia przy użyciu sed
+    # Zamienia 'done' na '}'
     line=$(echo "$line" | sed -E 's/^done$/}/')
+    # Zamienia 'do' na '{'
     line=$(echo "$line" | sed -E 's/do$/{/')
+    # Przetwarza pętle for, zamieniając składnię Bash na C
     line=$(echo "$line" | sed -E 's/for \(\((.*)\)\);?/for (\1)/')
 
     # Arytmetyka: let "VAR=wyrażenie"
+    # Zamienia składnię let na przypisanie w C
     line=$(echo "$line" | sed -E 's/^let "(\w+)=(.*)"$/\1 = \2;/')
 
     # Przypisanie zmiennej: VAR=wartość
@@ -156,18 +159,30 @@ translate_line() {
     echo_done=false
 
     # Arytmetyka: $((wyrażenie))
+    # Zamienia składnię $((wyrażenie)) na (wyrażenie); dla wyrażeń zakończonych średnikiem
     line=$(echo "$line" | sed -E 's/\$\(\((.*)\)\)$/(\1);/')
+    # Zamienia składnię $((wyrażenie)) na (wyrażenie) dla pozostałych przypadków
     line=$(echo "$line" | sed -E 's/\$\(\((.*)\)\)/(\1)/')
+    # Zamienia 'if [ warunek ]; then' na 'if (warunek) {'
     line=$(echo "$line" | sed -E 's/^if \[ (.*) \]; then$/if (\1) {/')
+    # Zamienia 'fi' na '}'
     line=$(echo "$line" | sed -E 's/^fi$/}/')
+    # Zamienia '-eq' na '=='
     line=$(echo "$line" | sed 's/-eq/==/g')
+    # Zamienia '-ne' na '!='
     line=$(echo "$line" | sed 's/-ne/!=/g')
+    # Zamienia '-lt' na '<'
     line=$(echo "$line" | sed 's/-lt/</g')
+    # Zamienia '-le' na '<='
     line=$(echo "$line" | sed 's/-le/<=/g')
+    # Zamienia '-gt' na '>'
     line=$(echo "$line" | sed 's/-gt/>/g')
+    # Zamienia '-ge' na '>='
     line=$(echo "$line" | sed 's/-ge/>=/g')
     range_for_translation
+    # Zamienia 'while [ warunek ];' na 'while (warunek)'
     line=$(echo "$line" | sed -E 's/while \[ (.*) \];?/while (\1)/')
+    # Usuwa '$' przed nazwą zmiennej
     line=$(echo "$line" | sed -E 's/\$(\w+)/\1/g')
 
     # Wypisz przetłumaczoną linię
@@ -191,7 +206,6 @@ while read -r line; do
     fi
 
     # Przetłumacz linię i dodaj ją do pliku wynikowego
-    echo "Translating: $line"
     translate_line "$line" "$output_file"
 done <"$input_file"
 

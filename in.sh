@@ -37,19 +37,15 @@ done
 echo "Demonstracja obsługi liczb niecałkowitych..."
 
 # Testowanie double, float
-a=1.5
-b=2.5
-c=3.5
+a=1
+b=2
+c=3
 echo "a=$a, b=$b, c=$c"
 
-# Uwaga: Bash nie obsługuje arytmetyki zmiennoprzecinkowej.
-# To nie da oczekiwanego wyniku.
 suma=$((a + b + c))
 echo "Próba sumowania $a, $b i $c (Uwaga: Bash nie obsługuje liczb zmiennoprzecinkowych): $suma"
 
 echo "Demonstracja obsługi łańcuchów znaków..."
 
-znaki="siema"
+znaki="test"
 echo "znaki=$znaki"
-
-echo "Wykonanie skryptu zakończone."

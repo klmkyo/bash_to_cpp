@@ -16,25 +16,29 @@ int main() {
 
     printf("Suma liczb parzystych do %d wynosi: %d\n", limit, suma);
 
+
     for (int j = 1; j <= 5; j++) {
         printf("Numer sekwencji: %d\n", j);
     }
+
 
     for (int i = 1; i <= 5; i++) {
         printf("Numer zakresu: %d\n", i);
     }
 
-    double a = 1.5;
-    double b = 2.5;
-    double c = 3.5;
-    printf("a=%f, b=%f, c=%f\n", a, b, c);
+
+    int a = 1;
+    int b = 2;
+    int c = 3;
+    printf("a=%d, b=%d, c=%d\n", a, b, c);
 
     suma = (a + b + c);
     printf(
-        "Próba sumowania %f, %f i %f (Uwaga: Bash nie obsługuje liczb "
+        "Próba sumowania %d, %d i %d (Uwaga: Bash nie obsługuje liczb "
         "zmiennoprzecinkowych): %d\n",
         a, b, c, suma);
 
-    const char* znaki = "siema";
+
+    const char* znaki = "test";
     printf("znaki=%s\n", znaki);
 }
