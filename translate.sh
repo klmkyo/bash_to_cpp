@@ -127,6 +127,17 @@ translate_line() {
         return
     fi
 
+    # Sprawdź czy linia jest wspierana: jeśli jest to funkcja (wykrywana po słowie kluczowym function oraz nawiasach klamrowych), to napisz że skrypt nie jest wspierany
+    if [[ "$line" =~ function ]]; then
+        echo "Error: skrypt zawiera funkcje, które nie są wspierane"
+        exit 1
+    fi
+
+    # Wykryj () w nazwie funkcji
+    if [[ "$line" =~ [a-zA-Z_][a-zA-Z0-9_]*\(\) ]]; then
+        echo "Error: skrypt zawiera funkcje, które nie są wspierane"
+        exit 1
+    fi
 
     # Tłumaczenie instrukcji echo
     echo_translation
@@ -162,31 +173,30 @@ translate_line() {
     line=$(echo "$line" | sed -E 's/\$(\w+)/\1/g')
 
     # Wypisz przetłumaczoną linię
-    echo "$line"
+    echo "$line" >> "$2"
 }
 
 input_file="$1"
 output_file="$2"
 
-# clear the output file
+# Wyczyść plik wynikowy
 > "$output_file"
 
 echo "#include <stdio.h>" >> "$output_file"
 echo "int main() {" >> "$output_file"
 
-# In a loop, go through each line and translate it
+# pętli przetwarzaj każdą linię i przetłumacz ją
 while read -r line; do
-    # If line is a shebang, ignore it
+    # Jeśli linia jest shebang, zignoruj ją
     if [[ "$line" =~ ^#! ]]; then
         continue
     fi
 
-    # Translate the line and append it to the output file
-    translate_line "$line" >> "$output_file"
-    # translate_line "$line"
+    # Przetłumacz linię i dodaj ją do pliku wynikowego
+    translate_line "$line" "$output_file"
 done < "$input_file"
 
 echo "}" >> "$output_file"
 
-# compile and run the output file
+# Skompiluj i uruchom plik wynikowy
 gcc "$output_file" -o out && ./out

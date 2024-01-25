@@ -31,4 +31,5 @@ sum=(a + b + c);
 printf("sum=%d\n", sum);
 const char* znaki="siema";
 printf("znaki=%s\n", znaki);
-}
+
+

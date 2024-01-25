@@ -37,3 +37,8 @@ sum=$((a + b + c))
 echo "sum=$sum"
 znaki="siema"
 echo "znaki=$znaki"
+
+
+function test() {
+  echo "test"
+}
