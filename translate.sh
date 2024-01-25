@@ -8,8 +8,20 @@ variable_replacement() {
 
     echo -e "\033[94m${line}\033[0m"
 
-    # TODO non-greedy match, spacja dookoła =
-    if [[ $line =~ ([a-zA-Z0-9]+)(\s*)=(\s*)(.*)(;|$) ]]; then
+    # TODO regex dobrze wykrywa co podmienić itp, ale dzieje się tak:
+    #input: for ( j = 1; j <= 5; j++ )
+
+    # 0 is j = 1;
+    # 1 is j
+    # 2 is
+    # 3 is
+    # 4 is 1
+    # 5 is ;
+
+    #output: int j=1;
+    # trzeba przywrócić lewą i prawą stronę
+
+    if [[ $line =~ ([[:alnum:]_]+)([[:space:]]*)=([[:space:]]*)([^;]+)(;|$) ]]; then
         # PRINT ALL THE BASH_REMATCHES
         for i in "${!BASH_REMATCH[@]}"; do
             echo -e "\033[92m${i}\033[0m is \033[92m${BASH_REMATCH[$i]}\033[0m"
