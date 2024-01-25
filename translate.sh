@@ -115,6 +115,21 @@ echo_translation() {
     fi
 }
 
+range_for_translation() {
+    local variable_name
+    local start
+    local end
+
+    if [[ $line =~ ^for[[:space:]]+([[:alnum:]_]+)[[:space:]]+in[[:space:]]+\{([0-9]+)\.\.([0-9]+)\}$ ]]; then
+        variable_name="${BASH_REMATCH[1]}"
+        start="${BASH_REMATCH[2]}"
+        end="${BASH_REMATCH[3]}"
+
+        line="for (int ${variable_name} = ${start}; ${variable_name} <= ${end}; ${variable_name}++)"
+    fi
+}
+
+
 translate_line() {
     line="$1"
 
@@ -165,7 +180,7 @@ translate_line() {
     line=$(echo "$line" | sed 's/-ge/>=/g')
 
     # for loop: for VAR in {start..end}; do ... done
-    line=$(echo "$line" | sed -E 's/^for (\w+) in \{(\d+)\.\.(\d+)\}(;?)/for (int \1 = \2; \1 <= \3; \1++)/')
+    range_for_translation
 
     # while loop: while [ condition ]; do ... done
     line=$(echo "$line" | sed -E 's/^while \[ (.*) \](.*)$/while (\1)/')
@@ -183,7 +198,6 @@ translate_line() {
 
 # same as above, but as bash string
 bash_script=$(cat << 'END_HEREDOC'
-
 #!/bin/bash
 
 # Initialize variables
@@ -251,3 +265,6 @@ while read -r line; do
 done <<< "$bash_script"
 
 echo "}" >> "$output_file"
+
+# compile this shitt and run it
+gcc "$output_file" -o out && ./out

@@ -1,7 +1,6 @@
 #include <stdio.h>
 int main() {
 
-
 int limit=10;
 int sum=0;
 int i=0;
@@ -22,7 +21,7 @@ for ( int j=1; j <= 5; j++ )
 printf("Sequence number: %d\n", j);
 }
 
-for i in {1..5}
+for (int i = 1; i <= 5; i++)
 {
 printf("Range number: %d\n", i);
 }
