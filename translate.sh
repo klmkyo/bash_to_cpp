@@ -6,33 +6,23 @@ variable_replacement() {
     local variable_name
     local variable_value
 
-    echo -e "\033[94m${line}\033[0m"
-
-    # TODO regex dobrze wykrywa co podmienić itp, ale dzieje się tak:
-    #input: for ( j = 1; j <= 5; j++ )
-
-    # 0 is j = 1;
-    # 1 is j
-    # 2 is
-    # 3 is
-    # 4 is 1
-    # 5 is ;
-
-    #output: int j=1;
-    # trzeba przywrócić lewą i prawą stronę
+    local og_match
+    # echo -e "\033[94m${line}\033[0m"
 
     if [[ $line =~ ([[:alnum:]_]+)([[:space:]]*)=([[:space:]]*)([^;]+)(;|$) ]]; then
         # PRINT ALL THE BASH_REMATCHES
-        for i in "${!BASH_REMATCH[@]}"; do
-            echo -e "\033[92m${i}\033[0m is \033[92m${BASH_REMATCH[$i]}\033[0m"
-        done
+        # for i in "${!BASH_REMATCH[@]}"; do
+        #     echo -e "\033[92m${i}\033[0m is \033[92m${BASH_REMATCH[$i]}\033[0m"
+        # done
 
+        og_match="${BASH_REMATCH[0]}"
 
         variable_name="${BASH_REMATCH[1]}"
         variable_value="${BASH_REMATCH[4]}"
     else
         return
     fi
+
 
     # Trim ';' at the end if there
     variable_value="${variable_value%;}"
@@ -65,7 +55,9 @@ variable_replacement() {
         # echo -e "\033[94m"
         # declare -p declared_variables
         # echo -e "\033[0m"
-        line="${variable_type} ${variable_name}=${variable_value};"
+
+        substitute="${variable_type} ${variable_name}=${variable_value};"
+        line="${line/$og_match/$substitute}"
     fi
 }
 
@@ -73,6 +65,8 @@ declare -A type_formatter_lookup
 type_formatter_lookup["int"]="%d"
 type_formatter_lookup["double"]="%f"
 type_formatter_lookup["const char*"]="%s"
+
+echo_done=false
 
 echo_translation() {
     local echo_content
@@ -117,6 +111,7 @@ echo_translation() {
 
         printf_command+=");"
         line="$printf_command"
+        echo_done=true
     fi
 }
 
@@ -147,7 +142,11 @@ translate_line() {
     line=$(echo "$line" | sed -E 's/^let "(\w+)=(.*)"$/\1 = \2;/')
 
     # Variable assignment: VAR=value
-    variable_replacement
+    # only runs if echo_done is false
+    if [[ $echo_done == false ]]; then
+        variable_replacement
+    fi
+    echo_done=false
 
     # Arithmetic: $((expression))
     line=$(echo "$line" | sed -E 's/\$\(\((.*)\)\)$/(\1);/')
@@ -184,16 +183,49 @@ translate_line() {
 
 # same as above, but as bash string
 bash_script=$(cat << 'END_HEREDOC'
-text="Hello World!"
-number=5
-pi=3.14
 
-textbutwithspace = "Hello World!"
+#!/bin/bash
 
+# Initialize variables
+limit=10
+sum=0
+i=0
+
+# Using while loop for summing even numbers
+while [ $i -le $limit ]
+do
+    # Math expression to check if number is even
+    if [ $((i % 2)) -eq 0 ]; then
+        # Math expression for summing
+        sum=$((sum + i))
+        echo "Added $i to sum"
+    fi
+    i=$((i + 1))
+done
+
+echo "Sum of even numbers up to $limit is: $sum"
+
+# Using for loop for displaying a sequence
 for (( j = 1; j <= 5; j++ ))
 do
     echo "Sequence number: $j"
 done
+
+# for range
+for i in {1..5}
+do
+    echo "Range number: $i"
+done
+
+# double, float testing
+a=1.5
+b=2.5
+c=3.5
+echo "a=$a,b=$b,c=$c"
+sum=$((a + b + c))
+echo "sum=$sum"
+znaki="siema"
+echo "znaki=$znaki"
 END_HEREDOC
 )
 
@@ -214,8 +246,8 @@ while read -r line; do
     fi
 
     # Translate the line and append it to the output file
-    # translate_line "$line" >> "$output_file"
-    translate_line "$line"
+    translate_line "$line" >> "$output_file"
+    # translate_line "$line"
 done <<< "$bash_script"
 
 echo "}" >> "$output_file"
