@@ -272,19 +272,14 @@ done <"$input_file"
 echo "}" >>"$output_file"
 ```
 
-## Kluczowe Funkcje
+Kod używa wyrażeń Regex aby dokonywać tłumaczenia. Typy zmiennych są pamiętane w tablicy asocjacyjnej, aby zapewnić poprawne tłumaczenie zmiennych. W programie można wyróżnić następujące funkcje:
 
-### `variable_replacement`
-Funkcja ta służy do zamiany deklaracji zmiennych z Bash na C. Wykorzystuje wyrażenia regularne do identyfikacji i zamiany zmiennych.
+- `variable_replacement` - funkcja do obsługi zastępowania zmiennych
+- `echo_translation` - funkcja do tłumaczenia instrukcji echo
+- `range_for_translation` - funkcja do tłumaczenia pętli for-range (`for i in {1..5}; do`)
+- `translate_line` - funkcja do tłumaczenia linii skryptu bash na C, wywoływana dla każdej linii skryptu
 
-### `echo_translation`
-Ta funkcja przekształca instrukcje `echo` z Bash na odpowiedniki w C, używając `printf`.
-
-### `range_for_translation`
-Funkcja konwertuje pętle `for` w Bash na ich odpowiedniki w C.
-
-### `translate_line`
-Główna funkcja do tłumaczenia pojedynczej linii kodu Bash na C. Wykorzystuje powyższe funkcje oraz dodatkowe wyrażenia regularne do obsługi innych przypadków.
+Plik wejściowy jest odczytywany linia po linii, a następnie przekazywany do funkcji `translate_line`, która przetwarza linię i zapisuje ją do pliku wyjściowego.
 
 
 # Działanie Programu
