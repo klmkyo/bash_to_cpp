@@ -105,12 +105,15 @@ range_for_translation() {
     local start
     local end
 
+
     # Wyrażenie regularne do dopasowywania pętli for-range
-    if [[ $line =~ for[[:space:]]+([[:alnum:]_]+)[[:space:]]+in[[:space:]]+\{([0-9]+)\.\.([0-9]+)\} ]]; then
+    if [[ $line =~ for[[:space:]]+([[:alnum:]_]+)[[:space:]]+in[[:space:]]+\{([0-9]+)\.\.([0-9]+)\}\;([[:space:]]*)(\{)? ]]; then
         variable_name="${BASH_REMATCH[1]}"
         start="${BASH_REMATCH[2]}"
         end="${BASH_REMATCH[3]}"
-        line="for (int ${variable_name} = ${start}; ${variable_name} <= ${end}; ${variable_name}++)"
+        bracket="${BASH_REMATCH[5]}"
+
+        line="for (int ${variable_name} = ${start}; ${variable_name} <= ${end}; ${variable_name}++) ${bracket}"
     fi
 }
 
@@ -131,7 +134,7 @@ translate_line() {
     # Różne tłumaczenia przy użyciu sed
     line=$(echo "$line" | sed -E 's/^done$/}/')
     line=$(echo "$line" | sed -E 's/do$/{/')
-    line=$(echo "$line" | sed -E 's/^for \(\((.*)\)\)(.*)$/for (\1)/')
+    line=$(echo "$line" | sed -E 's/for \(\((.*)\)\);?/for (\1)/')
 
     # Arytmetyka: let "VAR=wyrażenie"
     line=$(echo "$line" | sed -E 's/^let "(\w+)=(.*)"$/\1 = \2;/')
@@ -155,8 +158,7 @@ translate_line() {
     line=$(echo "$line" | sed 's/-gt/>/g')
     line=$(echo "$line" | sed 's/-ge/>=/g')
     range_for_translation
-    line=$(echo "$line" | sed -E 's/^while \[ (.*) \](.*)$/while (\1)/')
-    line=$(echo "$line" | sed -E 's/^while \[ (.*) \]$/while (\1)/')
+    line=$(echo "$line" | sed -E 's/while \[ (.*) \];?/while (\1)/')
     line=$(echo "$line" | sed -E 's/\$(\w+)/\1/g')
 
     # Wypisz przetłumaczoną linię
