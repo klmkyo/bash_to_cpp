@@ -20,7 +20,7 @@ variable_replacement() {
 
     # Usuń ';' na końcu, jeśli jest obecne
     variable_value="${variable_value%;}"
-    
+
     # Określ typ zmiennej na podstawie wartości
     local variable_type=""
     if [[ $variable_value =~ ^[+-]?[0-9]+\.?[0-9]*$ ]]; then
@@ -86,7 +86,6 @@ echo_translation() {
 
         printf_command+='\n"'
 
-
         if [[ ${#printf_arguments[@]} -gt 0 ]]; then
             IFS=","
             printf_command+=", ${printf_arguments[*]}"
@@ -104,7 +103,6 @@ range_for_translation() {
     local variable_name
     local start
     local end
-
 
     # Wyrażenie regularne do dopasowywania pętli for-range
     if [[ $line =~ for[[:space:]]+([[:alnum:]_]+)[[:space:]]+in[[:space:]]+\{([0-9]+)\.\.([0-9]+)\}\;([[:space:]]*)(\{)? ]]; then
@@ -173,17 +171,17 @@ translate_line() {
     line=$(echo "$line" | sed -E 's/\$(\w+)/\1/g')
 
     # Wypisz przetłumaczoną linię
-    echo "$line" >> "$2"
+    echo "$line" >>"$2"
 }
 
 input_file="$1"
 output_file="$2"
 
 # Wyczyść plik wynikowy
-> "$output_file"
+>"$output_file"
 
-echo "#include <stdio.h>" >> "$output_file"
-echo "int main() {" >> "$output_file"
+echo "#include <stdio.h>" >>"$output_file"
+echo "int main() {" >>"$output_file"
 
 # pętli przetwarzaj każdą linię i przetłumacz ją
 while read -r line; do
@@ -193,10 +191,11 @@ while read -r line; do
     fi
 
     # Przetłumacz linię i dodaj ją do pliku wynikowego
+    echo "Translating: $line"
     translate_line "$line" "$output_file"
-done < "$input_file"
+done <"$input_file"
 
-echo "}" >> "$output_file"
+echo "}" >>"$output_file"
 
 # Skompiluj i uruchom plik wynikowy
 gcc "$output_file" -o out && ./out

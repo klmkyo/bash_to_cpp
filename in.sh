@@ -1,44 +1,55 @@
 #!/bin/bash
 
-# Initialize variables
+# Inicjalizacja zmiennych
 limit=10
-sum=0
+suma=0
 i=0
 
-# Using while loop for summing even numbers
+echo "Obliczanie sumy liczb parzystych do $limit..."
+
+# Używanie pętli while do sumowania liczb parzystych
 while [ $i -le $limit ]; do
-  # Math expression to check if number is even
+  # Wyrażenie matematyczne do sprawdzania, czy liczba jest parzysta
   if [ $((i % 2)) -eq 0 ]; then
-    # Math expression for summing
-    sum=$((sum + i))
-    echo "Added $i to sum"
+    # Wyrażenie matematyczne do sumowania
+    suma=$((suma + i))
+    echo "Dodano $i do sumy, aktualna suma: $suma"
   fi
   i=$((i + 1))
 done
 
-echo "Sum of even numbers up to $limit is: $sum"
+echo "Suma liczb parzystych do $limit wynosi: $suma"
 
-# Using for loop for displaying a sequence
+echo "Wyświetlanie sekwencji od 1 do 5 za pomocą pętli for..."
+
+# Używanie pętli for do wyświetlania sekwencji
 for ((j = 1; j <= 5; j++)); do
-  echo "Sequence number: $j"
+  echo "Numer sekwencji: $j"
 done
 
-# for range
+echo "Wyświetlanie zakresu od 1 do 5 za pomocą pętli for range..."
+
+# Zakres for
 for i in {1..5}; do
-  echo "Range number: $i"
+  echo "Numer zakresu: $i"
 done
 
-# double, float testing
+echo "Demonstracja obsługi liczb niecałkowitych..."
+
+# Testowanie double, float
 a=1.5
 b=2.5
 c=3.5
-echo "a=$a,b=$b,c=$c"
-sum=$((a + b + c))
-echo "sum=$sum"
+echo "a=$a, b=$b, c=$c"
+
+# Uwaga: Bash nie obsługuje arytmetyki zmiennoprzecinkowej.
+# To nie da oczekiwanego wyniku.
+suma=$((a + b + c))
+echo "Próba sumowania $a, $b i $c (Uwaga: Bash nie obsługuje liczb zmiennoprzecinkowych): $suma"
+
+echo "Demonstracja obsługi łańcuchów znaków..."
+
 znaki="siema"
 echo "znaki=$znaki"
 
-
-function test() {
-  echo "test"
-}
+echo "Wykonanie skryptu zakończone."
