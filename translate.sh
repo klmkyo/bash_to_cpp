@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# Declare associative array to keep track of declared variables
+# Zadeklaruj tablicę asocjacyjną do śledzenia zadeklarowanych zmiennych
 declare -A declared_variables
 
-# Function to handle variable replacement
+# Funkcja do obsługi zastępowania zmiennych
 variable_replacement() {
     local variable_name
     local variable_value
     local og_match
 
-    # Regex to match variable assignments in bash
+    # Wyrażenie regularne do dopasowywania przypisań zmiennych w bashu
     if [[ $line =~ ([[:alnum:]_]+)([[:space:]]*)=([[:space:]]*)([^;]+)(;|$) ]]; then
         og_match="${BASH_REMATCH[0]}"
         variable_name="${BASH_REMATCH[1]}"
@@ -18,10 +18,10 @@ variable_replacement() {
         return
     fi
 
-    # Trim ';' at the end if present
+    # Usuń ';' na końcu, jeśli jest obecne
     variable_value="${variable_value%;}"
     
-    # Determine variable type based on value
+    # Określ typ zmiennej na podstawie wartości
     local variable_type=""
     if [[ $variable_value =~ ^[+-]?[0-9]+\.?[0-9]*$ ]]; then
         if [[ $variable_value =~ ^[+-]?[0-9]+$ ]]; then
@@ -33,13 +33,13 @@ variable_replacement() {
         variable_type="const char*"
     fi
 
-    # Check for empty variable name
+    # Sprawdź, czy nazwa zmiennej jest pusta
     if [[ -z "$variable_name" ]]; then
-        echo "Error: variable name is empty"
+        echo "Error: nazwa zmiennej jest pusta"
         exit 1
     fi
 
-    # Check if variable was previously declared
+    # Sprawdź, czy zmienna była wcześniej zadeklarowana
     local was_there=${declared_variables[$variable_name]+_}
     if [[ -n "$was_there" ]]; then
         line="${variable_name}=${variable_value};"
@@ -50,20 +50,20 @@ variable_replacement() {
     fi
 }
 
-# Lookup table for printf type formatters
+# Tabela przekierowań do formaterów typu printf
 declare -A type_formatter_lookup
 type_formatter_lookup["int"]="%d"
 type_formatter_lookup["double"]="%f"
 type_formatter_lookup["const char*"]="%s"
 
-# Flag to indicate echo translation completion
+# Flaga wskazująca zakończenie tłumaczenia echo
 echo_done=false
 
-# Function to translate echo statements
+# Funkcja do tłumaczenia instrukcji echo
 echo_translation() {
     local echo_content
 
-    # Regex to match echo statements
+    # Wyrażenie regularne do dopasowywania instrukcji echo
     if [[ $line =~ ^echo[[:space:]]+(.*)$ ]]; then
         echo_content="${BASH_REMATCH[1]}"
         echo_content="${echo_content%\"}"
@@ -72,7 +72,7 @@ echo_translation() {
         local printf_command='printf("'
         local printf_arguments=()
 
-        # Process each variable in the echo statement
+        # Przetwarzanie każdej zmiennej w instrukcji echo
         while [[ $echo_content =~ (\$[a-zA-Z_][a-zA-Z0-9_]*) ]]; do
             local var_name="${BASH_REMATCH[1]}"
             local var_name_stripped="${var_name:1}"
@@ -99,14 +99,14 @@ echo_translation() {
     fi
 }
 
-# Function to translate for-range loops
+# Funkcja do tłumaczenia pętli for-range
 range_for_translation() {
     local variable_name
     local start
     local end
 
-    # Regex to match for-range loops
-    if [[ $line =~ ^for[[:space:]]+([[:alnum:]_]+)[[:space:]]+in[[:space:]]+\{([0-9]+)\.\.([0-9]+)\}$ ]]; then
+    # Wyrażenie regularne do dopasowywania pętli for-range
+    if [[ $line =~ for[[:space:]]+([[:alnum:]_]+)[[:space:]]+in[[:space:]]+\{([0-9]+)\.\.([0-9]+)\} ]]; then
         variable_name="${BASH_REMATCH[1]}"
         start="${BASH_REMATCH[2]}"
         end="${BASH_REMATCH[3]}"
@@ -114,36 +114,36 @@ range_for_translation() {
     fi
 }
 
-# Function to translate a line of bash script to C
+# Funkcja do tłumaczenia linii skryptu bash na C
 translate_line() {
     line="$1"
 
-    # Handle comment: convert # to //, and don't translate anything after #
+    # Obsłuż komentarz: zamień # na // i nie tłumacz niczego po #
     if [[ "$line" =~ ^# ]]; then
         line=${line/#\#//}
         return
     fi
 
 
-    # Translate echo statements
+    # Tłumaczenie instrukcji echo
     echo_translation
 
-    # Various translations using sed
+    # Różne tłumaczenia przy użyciu sed
     line=$(echo "$line" | sed -E 's/^done$/}/')
     line=$(echo "$line" | sed -E 's/do$/{/')
     line=$(echo "$line" | sed -E 's/^for \(\((.*)\)\)(.*)$/for (\1)/')
 
-    # Arithmetic: let "VAR=expression"
+    # Arytmetyka: let "VAR=wyrażenie"
     line=$(echo "$line" | sed -E 's/^let "(\w+)=(.*)"$/\1 = \2;/')
 
-    # Variable assignment: VAR=value
-    # only runs if echo_done is false
+    # Przypisanie zmiennej: VAR=wartość
+    # tylko działa, jeśli echo_done jest fałszywe
     if [[ $echo_done == false ]]; then
         variable_replacement
     fi
     echo_done=false
 
-    # Arithmetic: $((expression))
+    # Arytmetyka: $((wyrażenie))
     line=$(echo "$line" | sed -E 's/\$\(\((.*)\)\)$/(\1);/')
     line=$(echo "$line" | sed -E 's/\$\(\((.*)\)\)/(\1)/')
     line=$(echo "$line" | sed -E 's/^if \[ (.*) \]; then$/if (\1) {/')
@@ -159,60 +159,12 @@ translate_line() {
     line=$(echo "$line" | sed -E 's/^while \[ (.*) \]$/while (\1)/')
     line=$(echo "$line" | sed -E 's/\$(\w+)/\1/g')
 
-    # Output the translated line
+    # Wypisz przetłumaczoną linię
     echo "$line"
 }
 
-
-# same as above, but as bash string
-bash_script=$(cat << 'END_HEREDOC'
-#!/bin/bash
-
-# Initialize variables
-limit=10
-sum=0
-i=0
-
-# Using while loop for summing even numbers
-while [ $i -le $limit ]
-do
-    # Math expression to check if number is even
-    if [ $((i % 2)) -eq 0 ]; then
-        # Math expression for summing
-        sum=$((sum + i))
-        echo "Added $i to sum"
-    fi
-    i=$((i + 1))
-done
-
-echo "Sum of even numbers up to $limit is: $sum"
-
-# Using for loop for displaying a sequence
-for (( j = 1; j <= 5; j++ ))
-do
-    echo "Sequence number: $j"
-done
-
-# for range
-for i in {1..5}
-do
-    echo "Range number: $i"
-done
-
-# double, float testing
-a=1.5
-b=2.5
-c=3.5
-echo "a=$a,b=$b,c=$c"
-sum=$((a + b + c))
-echo "sum=$sum"
-znaki="siema"
-echo "znaki=$znaki"
-END_HEREDOC
-)
-
-# Create a file to store the translated lines
-output_file="out.c"
+input_file="$1"
+output_file="$2"
 
 # clear the output file
 > "$output_file"
@@ -230,9 +182,9 @@ while read -r line; do
     # Translate the line and append it to the output file
     translate_line "$line" >> "$output_file"
     # translate_line "$line"
-done <<< "$bash_script"
+done < "$input_file"
 
 echo "}" >> "$output_file"
 
-# compile this shitt and run it
+# compile and run the output file
 gcc "$output_file" -o out && ./out
